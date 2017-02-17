@@ -1,35 +1,20 @@
-var WebsocketServer = new require('ws');
-var wss = new WebsocketServer.Server({port : 8081});
-var clients = [];
+var http = require('http');
+var fs = require('fs');
 
-wss.on('connection', function (ws) {
-    var id = clients.length;
-    clients[id] = ws;
-    console.log('New connection #' + id);
 
-    for (var key in clients) {
-        if (key != id) {
-            console.log('send');
-            clients[key].send(JSON.stringify({
-                type : 'info',
-                message : 'New user connected'
-            }))
-        }
-    }
+var server = http.createServer(function (req, res) {
+    var file = fs.createReadStream('index.html');
 
-    ws.on('message', function (message) {
-        console.log('New message recived ' + message);
-        for (var key in clients) {
-            clients[key].send(JSON.stringify({
-                type : 'message',
-                message : message,
-                author : id
-            }))
-        }
-    });
+    file
+        .on('error', function () {
+            res.statusCode = 500;
+            res.end('Server error');
+        })
+        .pipe(res)
+        .on('close', function() {
+            fileStream.destroy();
+        });
 
-    ws.on('close', function (err) {
-        delete clients[id];
-    })
 });
 
+module.exports = server;
